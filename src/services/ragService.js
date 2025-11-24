@@ -48,6 +48,7 @@ async function generateResponse(query, sessionId) {
       )
       .join('\n\n');
 
+    // Get chat history for context (read-only, don't save here)
     const chatHistory = await redis.get('chat:' + sessionId);
     const history = chatHistory ? JSON.parse(chatHistory) : [];
 
@@ -68,12 +69,8 @@ async function generateResponse(query, sessionId) {
       responseText = `Based on recent news articles, here are the relevant stories:\n\n${summary}\n\nNote: Full AI generation is temporarily unavailable. Please check these articles for more details.`;
     }
 
-    history.push(
-      { role: 'user', content: query, timestamp: new Date().toISOString() },
-      { role: 'assistant', content: responseText, timestamp: new Date().toISOString() }
-    );
-
-    await redis.setex('chat:' + sessionId, 3600, JSON.stringify(history));
+    // NOTE: Message saving is now handled by chatController.js to avoid duplication
+    // chatController.js saves messages with proper id, status, and timestamp fields
 
     return {
       response: responseText,

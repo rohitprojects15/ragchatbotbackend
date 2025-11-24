@@ -8,14 +8,26 @@ async function getSessionHistory(req, res) {
       return res.status(400).json({ error: 'Session ID is required' });
     }
 
-    const chatHistory = await redis.get('chat:' + sessionId);
-    
+    const redisKey = `chat:${sessionId}`;
+    const chatHistory = await redis.get(redisKey);
+
     if (!chatHistory) {
-      return res.json({ sessionId, history: [] });
+      console.log(`📭 No history found for session: ${sessionId}`);
+      return res.json({
+        sessionId,
+        messages: [],  // Frontend expects 'messages', not 'history'
+        totalMessages: 0
+      });
     }
 
-    const history = JSON.parse(chatHistory);
-    res.json({ sessionId, history });
+    const messages = JSON.parse(chatHistory);
+    console.log(`📬 Retrieved ${messages.length} messages for session: ${sessionId}`);
+
+    res.json({
+      sessionId,
+      messages,  // Frontend expects 'messages', not 'history'
+      totalMessages: messages.length
+    });
   } catch (error) {
     console.error('Error fetching session history:', error);
     res.status(500).json({ error: 'Failed to fetch session history' });
